@@ -26,6 +26,7 @@ private:
 	// Liste de workers
 	std::mutex m_mutLstWorker;
 	std::list<std::future<int>> m_lstWorker;
+
 public:
 	Kernel();
 	int AddCmd(std::unique_ptr<Cmd> cmd);

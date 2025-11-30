@@ -7,9 +7,9 @@ int main()
 	cmdp::Kernel kernel;
 	//kernel.Run();
 
-	for(int i=0; i<1000;++i)
+	for(int i=0; i<100;++i)
 	{ 
-		Sleep(1);
+		std::this_thread::sleep_for(std::chrono::milliseconds(1));
 		kernel.AddCmd(std::make_unique<cmdp::TestCmd>());
 		display.Set("WorkerCount", std::any(kernel.GetExecCount()));
 		display.Set("CmdCount", std::any(kernel.GetCmdCount()));

@@ -7,7 +7,7 @@ namespace cmdp
 	{
 		while (true)
 		{
-			Sleep(10);
+			std::this_thread::sleep_for(std::chrono::milliseconds(1));
 			std::unique_lock<std::mutex> lock(m_mutQuCmd);
 			/**
 			* On utilise unique lock avant le wait pour eviter les race conditions
@@ -41,31 +41,20 @@ namespace cmdp
 	}
 	int Kernel::CleaningRoutine()
 	{
-		std::list<std::future<int>>::iterator itPrev;
-		bool bDelPrev = false;
 		while (true)
 		{
-			Sleep(1000);
-			bDelPrev = false;
+			std::this_thread::sleep_for(std::chrono::milliseconds(1));
+			std::unique_lock<std::mutex> lock(m_mutLstWorker);
 			for (auto it = m_lstWorker.begin(); it!=m_lstWorker.end(); ++it)
 			{
-				if (bDelPrev)
-				{
-					bDelPrev = false;
-					std::unique_lock<std::mutex> lock(m_mutLstWorker);
-					m_lstWorker.erase(itPrev);
-				}
-				
-
-
-				std::future_status status = it->wait_for(std::chrono::milliseconds(10));
+				std::future_status status = it->wait_for(std::chrono::milliseconds(1));
 				if (status == std::future_status::ready)
 				{
-					bDelPrev = true;
+					m_lstWorker.erase(it);
+					break;
 				}
-				
-				itPrev = it;
 			}
+
 		}
 		return 0;
 	}
