@@ -3,14 +3,17 @@
 class Display
 {
 private:
-	std::mutex m_mutStrBuffer;
-	std::string m_strBuffer;
+	struct ValInfos
+	{
+		std::any _val;
+		std::string _strValDisplay;
+		std::size_t _uValhash;
+		bool _bValRefresh;
+	};
 
-	std::mutex m_mutMapVal;
-	std::map<std::string, std::any> m_mapVal;
-	std::map<std::string, std::string> m_mapValDisplay;
-	std::map<std::string, std::size_t> m_mapValHash;
-	std::map<std::string, bool> m_mapValRefresh;
+	std::map<std::string, ValInfos> m_mapValInfos;
+
+	std::mutex m_mutValInfos;
 
 	std::size_t m_uLastHash;
 	bool m_bDoRefresh;

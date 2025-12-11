@@ -7,22 +7,22 @@
 
 void Display::RefreshBuffer()
 {
-    std::unique_lock<std::mutex> lock(m_mutStrBuffer);
+    std::unique_lock<std::mutex> lock(m_mutValInfos);
 	std::stringstream ss;
-    for (const auto& pair : m_mapVal) {
-        m_mapValRefresh[pair.first] = false;
+    for (auto& pair : m_mapValInfos) {
+        m_mapValInfos[pair.first]._bValRefresh = false;
         ss << pair.first << " = ";
-        if (pair.second.type() == typeid(int)) {
-            ss << std::any_cast<int>(pair.second);
+        if (pair.second._val.type() == typeid(int)) {
+            ss << std::any_cast<int>(pair.second._val);
         }
-        else if (pair.second.type() == typeid(std::string)) {
-            ss << std::any_cast<std::string>(pair.second);
+        else if (pair.second._val.type() == typeid(std::string)) {
+            ss << std::any_cast<std::string>(pair.second._val);
         }
-        else if (pair.second.type() == typeid(double)) {
-            ss << std::any_cast<double>(pair.second);
+        else if (pair.second._val.type() == typeid(double)) {
+            ss << std::any_cast<double>(pair.second._val);
         }
-        else if (pair.second.type() == typeid(bool)) {
-            ss << (std::any_cast<bool>(pair.second) ? "true" : "false");
+        else if (pair.second._val.type() == typeid(bool)) {
+            ss << (std::any_cast<bool>(pair.second._val) ? "true" : "false");
         }
         else {
             ss << "unknown type";
@@ -30,18 +30,17 @@ void Display::RefreshBuffer()
         std::string strLine = ss.str();
         std::size_t hash = std::hash<std::string>{}(strLine);
 
-        if (m_mapValHash[pair.first] != hash)
+        if (pair.second._uValhash != hash)
         {
-            m_mapValHash[pair.first] = hash;
-            m_mapValDisplay[pair.first] = strLine;
-            m_mapValRefresh[pair.first] = true;
+            pair.second._uValhash = hash;
+            
+            pair.second._strValDisplay = strLine;
+            pair.second._bValRefresh = true;
             
         }
         ss.str("");
         ss.clear();
     }
-    m_strBuffer = ss.str();
-
 }
 
 Display::Display() :
@@ -52,15 +51,19 @@ Display::Display() :
 
 void Display::Show()
 {
-    std::unique_lock<std::mutex> lock(m_mutStrBuffer);
     HANDLE m_hConsole = GetStdHandle(STD_OUTPUT_HANDLE);
 
     short i = 0;
-    for (auto it = m_mapValDisplay.begin();
-        it!=m_mapValDisplay.end();
+    std::string strLineToDisplay;
+    std::unique_lock<std::mutex> lock(m_mutValInfos);
+
+    for (auto it = m_mapValInfos.begin();
+        it!= m_mapValInfos.end();
         it++)
     {
-        if (!m_mapValRefresh[it->first])
+        strLineToDisplay = it->second._strValDisplay;
+
+        if (!it->second._bValRefresh)
         {
             i++;
             continue;
@@ -76,31 +79,20 @@ void Display::Show()
         SetConsoleCursorPosition(m_hConsole, { 0,i });
         WriteConsoleA(
             m_hConsole,
-            it->second.c_str(),
-            (DWORD)it->second.length(),
+            strLineToDisplay.c_str(),
+            strLineToDisplay.length(),
             &dwCharsWritten,
             NULL
         );
         i++;
     }
     
-	//std::unique_lock<std::mutex> lock(m_mutStrBuffer);
- //   HANDLE m_hConsole = GetStdHandle(STD_OUTPUT_HANDLE);
- //   SetConsoleCursorPosition(m_hConsole, {0,0});
- //   DWORD dwCharsWritten = 0;
- //   WriteConsoleA(
- //       m_hConsole,
- //       m_strBuffer.c_str(),
- //       (DWORD)m_strBuffer.length(),
- //       &dwCharsWritten,
- //       NULL
- //   );
 }
 
 void Display::Set(const std::string&& name, const std::any&& val)
 {
-    std::unique_lock<std::mutex> lock(m_mutMapVal);
-    m_mapVal[name] = val;
+    std::unique_lock<std::mutex> lock(m_mutValInfos);
+    m_mapValInfos[name]._val = val;
     lock.unlock();
 
     RefreshBuffer();
